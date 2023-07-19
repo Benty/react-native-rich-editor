@@ -14,6 +14,7 @@
     "url": "https://github.com/wxik/react-native-rich-editor.git"
   },
   "dependencies": {
+    "tinycolor2": "^1.6.0"
   },
   "devDependencies": {
     "@types/react-native": "*"

@@ -1,5 +1,6 @@
 import React, {Component} from 'react';
 import {FlatList, Image, StyleSheet, TouchableOpacity, View} from 'react-native';
+import tinycolor from "tinycolor2";
 import {actions} from './const';
 
 export const defaultActions = [
@@ -79,12 +80,51 @@ export default class RichToolbar extends Component {
     const {actions} = nextProps;
     if (actions !== prevState.actions) {
       let {items = []} = prevState;
+      const params = {
+        foreColor: nextProps.editor?.current?.props.editorStyle.color,
+        backgroundColor: nextProps.editor?.current?.props.editorStyle.backgroundColor,
+      }
       return {
         actions,
-        data: actions.map(action => ({action, selected: items.includes(action)})),
+        data: actions.map(action => ({ action, value: RichToolbar._getValue(action, items), selected: RichToolbar._includesAction(action, items, params) })),
       };
     }
     return null;
+  }
+
+  static _getValue(action, items) {
+    for (var item of items) {
+      if (typeof item === 'string') { continue; }
+      if (Object.keys(item).length > 0) {
+        if (item.type == action) {
+          return item.value;
+        }
+      }
+    }
+  }
+
+  static _includesAction(action, items, params) {
+    const filteredItems = items.filter(item => {
+      if (typeof item === 'string') return true;
+      if (Object.keys(item).length > 0) {
+        if (item.type == actions.foreColor) {
+          var color1 = tinycolor(item.value).toHexString();
+          var color2 = tinycolor(params.foreColor).toHexString();
+          return color1 != color2;
+        }
+
+        if (item.type == actions.hiliteColor) {
+
+          var color1 = tinycolor(item.value).toHexString();
+          var color2 = tinycolor(params.backgroundColor).toHexString();
+          return color1 != color2;
+        }
+
+        return true;
+      }
+    });
+    const normalizedItems = filteredItems.map(item => (typeof item === 'string' ? item : item.type));
+    return normalizedItems.includes(action);
   }
 
   componentDidMount() {
@@ -112,9 +152,13 @@ export default class RichToolbar extends Component {
   setSelectedItems(items) {
     const {items: selectedItems} = this.state;
     if (this.editor && items !== selectedItems) {
+      const params = {
+        foreColor: this.editor.props.editorStyle.color,
+        backgroundColor: this.editor.props.editorStyle.backgroundColor
+      }
       this.setState({
         items,
-        data: this.state.actions.map(action => ({action, selected: items.includes(action)})),
+        data: this.state.actions.map(action => ({ action, value: RichToolbar._getValue(action, items), selected: RichToolbar._includesAction(action, items, params) })),
       });
     }
   }
@@ -138,6 +182,23 @@ export default class RichToolbar extends Component {
     } else {
       return getDefaultIcon()[action];
     }
+  }
+
+  _getButtonIconTintColor(action, selected) {
+    let that = this;
+
+    var item = that.state.data.find(item => item.action == action);
+
+    if ((item.action == actions.foreColor || item.action == actions.hiliteColor) && item.value) {
+      return item.value;
+    }
+    const {disabled} = this.props;
+
+    return disabled
+      ? that.props.disabledIconTint
+      : selected
+      ? that.props.selectedIconTint
+      : that.props.iconTint;
   }
 
   handleKeyboard() {
@@ -217,11 +278,8 @@ export default class RichToolbar extends Component {
     const icon = that._getButtonIcon(action);
     const {iconSize, iconGap, disabled, itemStyle} = that.props;
     const style = selected ? that._getButtonSelectedStyle() : that._getButtonUnselectedStyle();
-    const tintColor = disabled
-      ? that.props.disabledIconTint
-      : selected
-      ? that.props.selectedIconTint
-      : that.props.iconTint;
+    const tintColor = that._getButtonIconTintColor(action, selected);
+
     return (
       <TouchableOpacity
         key={action}
@@ -248,8 +306,8 @@ export default class RichToolbar extends Component {
 
   _renderAction(action, selected) {
     return this.props.renderAction
-      ? this.props.renderAction(action, selected)
-      : this._defaultRenderAction(action, selected);
+    ? this.props.renderAction(action, selected)
+    : this._defaultRenderAction(action, selected);
   }
 
   render() {
