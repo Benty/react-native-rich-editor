@@ -1,5 +1,6 @@
 import React, {Component} from 'react';
 import {FlatList, Image, StyleSheet, TouchableOpacity, View} from 'react-native';
+import tinycolor from "tinycolor2";
 import {actions} from './const';
 
 export const defaultActions = [
@@ -114,9 +115,32 @@ export default class RichToolbar extends Component {
     if (this.editor && items !== selectedItems) {
       this.setState({
         items,
-        data: this.state.actions.map(action => ({action, selected: items.includes(action)})),
+        data: this.state.actions.map(action => ({ action, selected: this._includesAction(action, items) })),
       });
     }
+  }
+
+  _includesAction(action, items) {
+    const filteredItems = items.map(item => {
+      if (typeof item === 'string') return true;
+      if (Object.keys(item).length > 0) {
+        if (item.key == actions.foreColor) {
+          var color1 = tinycolor(item.value).toHexString();
+          var color2 = tinycolor(this.editor.props.editorStyle.color).toHexString();
+          return color1 == color2;
+        }
+
+        if (item.key == actions.hiliteColor) {
+          var color1 = tinycolor(item.value).toHexString();
+          var color2 = tinycolor(this.editor.props.editorStyle.backgroundColor).toHexString();
+          return color1 == color2;
+        }
+
+        return true;
+      }
+    });
+    const normalizedItems = filteredItems.map(item => (typeof item === 'string' ? item : item.type));
+    return normalizedItems.includes(action);
   }
 
   _getButtonSelectedStyle() {
