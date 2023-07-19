@@ -86,10 +86,21 @@ export default class RichToolbar extends Component {
       }
       return {
         actions,
-        data: actions.map(action => ({ action, selected: RichToolbar._includesAction(action, items, params) })),
+        data: actions.map(action => ({ action, value: RichToolbar._getValue(action, items), selected: RichToolbar._includesAction(action, items, params) })),
       };
     }
     return null;
+  }
+
+  static _getValue(action, items) {
+    for (var item of items) {
+      if (typeof item === 'string') { continue; }
+      if (Object.keys(item).length > 0) {
+        if (item.type == action) {
+          return item.value;
+        }
+      }
+    }
   }
 
   static _includesAction(action, items, params) {
@@ -147,7 +158,7 @@ export default class RichToolbar extends Component {
       }
       this.setState({
         items,
-        data: this.state.actions.map(action => ({ action, selected: RichToolbar._includesAction(action, items, params) })),
+        data: this.state.actions.map(action => ({ action, value: RichToolbar._getValue(action, items), selected: RichToolbar._includesAction(action, items, params) })),
       });
     }
   }
@@ -171,6 +182,23 @@ export default class RichToolbar extends Component {
     } else {
       return getDefaultIcon()[action];
     }
+  }
+
+  _getButtonIconTintColor(action, selected) {
+    let that = this;
+
+    var item = that.state.data.find(item => item.action == action);
+
+    if ((item.action == actions.foreColor || item.action == actions.hiliteColor) && item.value) {
+      return item.value;
+    }
+    const {disabled} = this.props;
+
+    return disabled
+      ? that.props.disabledIconTint
+      : selected
+      ? that.props.selectedIconTint
+      : that.props.iconTint;
   }
 
   handleKeyboard() {
@@ -250,11 +278,8 @@ export default class RichToolbar extends Component {
     const icon = that._getButtonIcon(action);
     const {iconSize, iconGap, disabled, itemStyle} = that.props;
     const style = selected ? that._getButtonSelectedStyle() : that._getButtonUnselectedStyle();
-    const tintColor = disabled
-      ? that.props.disabledIconTint
-      : selected
-      ? that.props.selectedIconTint
-      : that.props.iconTint;
+    const tintColor = that._getButtonIconTintColor(action, selected);
+
     return (
       <TouchableOpacity
         key={action}
