@@ -80,12 +80,40 @@ export default class RichToolbar extends Component {
     const {actions} = nextProps;
     if (actions !== prevState.actions) {
       let {items = []} = prevState;
+      const params = {
+        foreColor: nextProps.editor?.current?.props.editorStyle.color,
+        backgroundColor: nextProps.editor?.current?.props.editorStyle.backgroundColor,
+      }
       return {
         actions,
-        data: actions.map(action => ({action, selected: items.includes(action)})),
+        data: actions.map(action => ({ action, selected: RichToolbar._includesAction(action, items, params) })),
       };
     }
     return null;
+  }
+
+  static _includesAction(action, items, params) {
+    const filteredItems = items.filter(item => {
+      if (typeof item === 'string') return true;
+      if (Object.keys(item).length > 0) {
+        if (item.type == actions.foreColor) {
+          var color1 = tinycolor(item.value).toHexString();
+          var color2 = tinycolor(params.foreColor).toHexString();
+          return color1 != color2;
+        }
+
+        if (item.type == actions.hiliteColor) {
+
+          var color1 = tinycolor(item.value).toHexString();
+          var color2 = tinycolor(params.backgroundColor).toHexString();
+          return color1 != color2;
+        }
+
+        return true;
+      }
+    });
+    const normalizedItems = filteredItems.map(item => (typeof item === 'string' ? item : item.type));
+    return normalizedItems.includes(action);
   }
 
   componentDidMount() {
@@ -113,34 +141,15 @@ export default class RichToolbar extends Component {
   setSelectedItems(items) {
     const {items: selectedItems} = this.state;
     if (this.editor && items !== selectedItems) {
+      const params = {
+        foreColor: this.editor.props.editorStyle.color,
+        backgroundColor: this.editor.props.editorStyle.backgroundColor
+      }
       this.setState({
         items,
-        data: this.state.actions.map(action => ({ action, selected: this._includesAction(action, items) })),
+        data: this.state.actions.map(action => ({ action, selected: RichToolbar._includesAction(action, items, params) })),
       });
     }
-  }
-
-  _includesAction(action, items) {
-    const filteredItems = items.map(item => {
-      if (typeof item === 'string') return true;
-      if (Object.keys(item).length > 0) {
-        if (item.key == actions.foreColor) {
-          var color1 = tinycolor(item.value).toHexString();
-          var color2 = tinycolor(this.editor.props.editorStyle.color).toHexString();
-          return color1 == color2;
-        }
-
-        if (item.key == actions.hiliteColor) {
-          var color1 = tinycolor(item.value).toHexString();
-          var color2 = tinycolor(this.editor.props.editorStyle.backgroundColor).toHexString();
-          return color1 == color2;
-        }
-
-        return true;
-      }
-    });
-    const normalizedItems = filteredItems.map(item => (typeof item === 'string' ? item : item.type));
-    return normalizedItems.includes(action);
   }
 
   _getButtonSelectedStyle() {
@@ -272,8 +281,8 @@ export default class RichToolbar extends Component {
 
   _renderAction(action, selected) {
     return this.props.renderAction
-      ? this.props.renderAction(action, selected)
-      : this._defaultRenderAction(action, selected);
+    ? this.props.renderAction(action, selected)
+    : this._defaultRenderAction(action, selected);
   }
 
   render() {
