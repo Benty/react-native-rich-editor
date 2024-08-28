@@ -660,15 +660,14 @@ function createHTML(options = {}) {
             addEventListener(content, 'blur', handleBlur);
             addEventListener(content, 'focus', handleFocus);
             addEventListener(content, 'paste', function (e) {
-                // get text representation of clipboard
-                var text = (e.originalEvent || e).clipboardData.getData('text/plain');
-
+                e.stopPropagation();
+                e.preventDefault();
+                text = var text = (e.originalEvent || e).clipboardData.getData('text/plain');
                 ${pasteListener} && postAction({type: 'CONTENT_PASTED', data: text});
                 if (${pasteAsPlainText}) {
-                    // cancel paste
-                    e.preventDefault();
-                    // insert text manually
-                    exec("insertText", text);
+                  exec('insertText', text); // can survive through exec
+                } else {
+                  exec('insertHTML', text); // can survive through exec
                 }
             });
             addEventListener(content, 'compositionstart', function(event){
