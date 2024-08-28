@@ -662,12 +662,12 @@ function createHTML(options = {}) {
             addEventListener(content, 'paste', function (e) {
                 e.stopPropagation();
                 e.preventDefault();
-                text = var text = (e.originalEvent || e).clipboardData.getData('text/plain');
+                var text = (e.originalEvent || e).clipboardData.getData('text/plain');
                 ${pasteListener} && postAction({type: 'CONTENT_PASTED', data: text});
                 if (${pasteAsPlainText}) {
-                  exec('insertText', text); // can survive through exec
+                    exec('insertText', text); // can survive through exec
                 } else {
-                  exec('insertHTML', text); // can survive through exec
+                    exec('insertHTML', text); // can survive through exec
                 }
             });
             addEventListener(content, 'compositionstart', function(event){
